@@ -1,8 +1,12 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
+import configparser
 
-DATABASE_URL = "postgresql://postgres:123ugofree@localhost/postgres"
+config = configparser.ConfigParser()
+config.read('config/config.ini')
+db_config = config['postgres']
 
+DATABASE_URL = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}/{db_config['database']}"
 engine = create_engine(DATABASE_URL)
 
 try:
