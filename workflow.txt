@@ -1,0 +1,18 @@
+
+
+
+
+
+select * from postgres.canteen.user
+select * from postgres.canteen.order
+select * from postgres.canteen.meal
+
+update postgres.canteen.meal
+set is_available = true 
+where name = 'Espresso';
+
+
+creation of the tables
+contraints
+relationships btwn tables
+stored procedure
