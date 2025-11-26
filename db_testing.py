@@ -11,9 +11,7 @@ engine = create_engine(DATABASE_URL)
 
 try:
     with engine.connect() as connection:
-        # result = connection.execute(text("SELECT 1"))
-        result = connection.execute(text("select meal_id, name, description, price, category from canteen.meal"))# WHERE is_available = TRUE"))
-        print(result)
+        result = connection.execute(text("SELECT 1"))
         print("Connection successful!")
 except OperationalError as e:
     print(f"Connection failed: {e}")
