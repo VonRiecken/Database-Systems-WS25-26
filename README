@@ -1,2 +1,37 @@
 Database Systems Group 4
 
+**General Information**
+
+Applicable to all Groups and tasks:
+As part of this course, each student is required to contribute to the development of a structured
+database project, culminating in both a written term paper and an individual presentation (see
+StuPo HA+RE guidelines). The project is divided into two phases, with initial submissions due
+on November 28th (December 5th) and final submissions due on January 16th.
+
+**General Requirements:**
+The focus of this project is the creation and manipulation of database structures through SQL
+or Python-based code. Students are expected to submit **well-documented code, with ample
+comments and explanations to ensure clarity**. Alternatively, a traditional written report may be
+provided. Each student must also prepare an individual presentation, discussing one aspect of
+their schema or database development, to be delivered at the end of each phase. This
+approach is intended to balance the workload evenly among participants
+
+**Submission Requirements for Phase 1:**
+Database Structure Creation: Submit an SQL script that initializes the database structure, including tables, relations, constraints, and views. This script should begin with a
+USE **dbsysgr4**; statement to specify the database context. You may utilize tools such as MySQL Workbench to assist in the model development.
+Sample Data Generation: Include an SQL script that populates the schema with sample data, which will be used to demonstrate and test the functionality of the database.
+Functionality Testing: Provide SQL scripts that test the database's constraints and functionalities, ensuring that the schema operates as expected.
+Individual Presentations: Each group member must prepare an individual presentation that covers a specific component of the schema. This will be followed by a Q&A
+session to assess understanding and depth of knowledge.
+
+The presentation should provide an **In-depth explanation of the design choices, challenges encountered, and any optimizations applied**.
+
+**Development Environment:**
+All tables, views, and procedures must be implemented within the group schema provided on the server at reddata.m.hs-offenburg.de. If additional test schemas are
+needed, students may request them or utilize a local database installation.
+
+
+
+
+Create Tables: (avoiding foreign key errors)
+User → Meal → Ingredient → Recipe → Allergen → Meal_Allergen → Nutritional_Info → Order → Order_Item → Feedback
