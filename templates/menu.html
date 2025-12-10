@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Menu - University Canteen</title>
+    <style>
+        /* --- GLOBAL STYLES --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; padding: 20px; padding-bottom: 80px; color: #333; }
+        
+        /* --- MODERN NAVBAR --- */
+        .nav {
+            background: #ffffff;
+            padding: 15px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap; /* Responsive wrapping */
+            gap: 20px;
+        }
+
+        /* Left Side: Logo & User */
+        .nav-brand { display: flex; align-items: center; gap: 15px; }
+        .nav-logo-icon { font-size: 2em; background: #e3f2fd; padding: 8px; border-radius: 12px; line-height: 1; }
+        .nav-title h1 { margin: 0; font-size: 1.4em; font-weight: 800; color: #2c3e50; letter-spacing: -0.5px; }
+        .nav-welcome { font-size: 0.9em; color: #7f8c8d; }
+        .nav-welcome span { color: #2c3e50; font-weight: 700; }
+
+        /* Right Side: Controls */
+        .nav-controls { display: flex; align-items: center; gap: 25px; }
+
+        /* Pickup Time Capsule */
+        .time-capsule {
+            display: flex; align-items: center; gap: 10px;
+            background: #f8f9fa; border: 1px solid #e9ecef;
+            padding: 8px 16px; border-radius: 30px;
+            transition: border-color 0.2s;
+        }
+        .time-capsule:hover { border-color: #ced4da; }
+        .time-label { font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; color: #adb5bd; }
+        input[type="time"] {
+            border: none; background: transparent;
+            font-family: inherit; font-size: 1.1em; font-weight: 600; color: #2c3e50;
+            cursor: pointer; outline: none;
+        }
+
+        /* Navigation Links */
+        .nav-links { display: flex; align-items: center; gap: 20px; }
+        .nav-link {
+            text-decoration: none; color: #555; font-weight: 600; font-size: 0.95em;
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px; border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover { background: #f1f3f5; color: #007bff; }
+        
+        /* Admin Link Special Style */
+        .nav-link.admin { color: #e74c3c; }
+        .nav-link.admin:hover { background: #fdf0ed; color: #c0392b; }
+
+        /* Logout Button */
+        .btn-logout {
+            background: white; border: 2px solid #eee; color: #7f8c8d;
+            padding: 8px 20px; border-radius: 30px;
+            font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-logout:hover { border-color: #e74c3c; color: #e74c3c; background: #fff5f5; }
+
+        /* --- REST OF THE UI (Grid, Cards, etc.) --- */
+        .filter-btn { padding: 8px 16px; border: none; background: #e9ecef; cursor: pointer; border-radius: 20px; margin-right: 5px; transition: 0.2s; font-weight: 600; color: #555;}
+        .filter-btn.active { background: #2c3e50; color: white; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        
+        .card { background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s; display: flex; flex-direction: column; border: 1px solid #f0f0f0;}
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .card-img { width: 100%; height: 180px; object-fit: cover; background-color: #eee; }
+        .card-body { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
+        .card-meta { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85em; }
+        .badge-cat { color: #007bff; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .badge-type { background: #f8f9fa; color: #666; padding: 4px 8px; border-radius: 6px; font-weight: 600; }
+        
+        .row { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 15px; }
+        input[type="number"] { width: 50px; padding: 8px; border: 1px solid #ddd; border-radius: 8px; text-align: center; font-weight: bold; }
+        
+        .btn-add { background: #27ae60; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: background 0.2s;}
+        .btn-add:hover { background: #219150; }
+        .btn-disabled { background: #e0e0e0; color: #999; cursor: not-allowed; padding: 10px 18px; border:none; border-radius: 8px; font-weight: bold;}
+
+        /* --- CHECKOUT BAR --- */
+        #checkout-bar {
+            position: fixed; bottom: 30px; right: 30px;
+            background: #2c3e50; color: white;
+            padding: 12px 25px; border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: none; align-items: center; gap: 15px; z-index: 1000;
+        }
+        .checkout-trigger { display: flex; align-items: center; gap: 15px; cursor: pointer; padding-right: 20px; border-right: 1px solid #4a6278; }
+        .checkout-trigger:hover span { color: #f1c40f; }
+        .badge-count { background: #f1c40f; color: #2c3e50; padding: 4px 10px; border-radius: 20px; font-weight: 800; font-size: 0.9em; }
+        .btn-clear { background: #e74c3c; border: none; color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: bold; font-size: 0.85em; margin-left: 5px;}
+        .btn-clear:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <div class="nav">
+        <div class="nav-brand">
+            <div class="nav-logo-icon">🎓</div>
+            <div class="nav-title">
+                <h1>UniEats</h1>
+                <div class="nav-welcome">Hi, <span id="username">Guest</span></div>
+            </div>
+        </div>
+
+        <div class="nav-controls">
+            <div class="time-capsule">
+                <span class="time-label">Pickup</span>
+                <input type="time" id="pickupTime">
+            </div>
+
+            <div class="nav-links">
+                <a href="/reports" id="admin-link" class="nav-link admin" style="display:none;">
+                    📊 Reports
+                </a>
+                
+                <a href="/my-orders" class="nav-link">
+                    📦 My Orders
+                </a>
+
+                <button onclick="logout()" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 30px;">
+        <button class="filter-btn active" onclick="filterMenu('all', this)">All Menu</button>
+        <button class="filter-btn" onclick="filterMenu('Breakfast', this)">🍳 Breakfast</button>
+        <button class="filter-btn" onclick="filterMenu('Lunch', this)">🍔 Lunch</button>
+        <button class="filter-btn" onclick="filterMenu('Dinner', this)">🥗 Dinner</button>
+    </div>
+
+    <div id="menu-grid" class="grid">Loading delicious food...</div>
+
+    <div id="checkout-bar">
+        <div class="checkout-trigger" onclick="processCheckout()">
+            <span style="font-size: 1.1em; font-weight: 600;">Checkout</span>
+            <span class="badge-count" id="cart-count">0</span>
+            <span id="cart-total" style="color: #f1c40f; font-weight: bold; font-size: 1.1em;">$0.00</span>
+        </div>
+        <button class="btn-clear" onclick="clearCart()">🗑️ Clear</button>
+    </div>
+
+    <script>
+        // --- LOGIC (Kept exactly the same as before) ---
+        let allMenuItems = [];
+        let cart = []; 
+        const user = JSON.parse(localStorage.getItem('user'));
+        
+        if (!user) window.location.href = '/';
+        document.getElementById('username').innerText = user.name;
+        if (user.role === 'Admin') document.getElementById('admin-link').style.display = 'flex'; // Changed to flex for new CSS
+
+        // Set default time (Now + 15 mins)
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 15);
+        document.getElementById('pickupTime').value = now.toTimeString().substring(0,5);
+
+        async function loadMenu() {
+            const role = user.role || "Student";
+            try {
+                const res = await fetch(`/api/menu?role=${role}`);
+                allMenuItems = await res.json();
+                renderMenu(allMenuItems);
+            } catch (e) { console.error(e); }
+        }
+
+        function renderMenu(items) {
+            const container = document.getElementById('menu-grid');
+            container.innerHTML = '';
+            items.forEach(item => {
+                const isUnavailable = (item.is_available != 1);
+                const opacity = isUnavailable ? '0.6' : '1';
+                const btnState = isUnavailable ? 'disabled' : '';
+                const btnText = isUnavailable ? 'Sold Out' : 'Add';
+                const btnClass = isUnavailable ? 'btn-disabled' : 'btn-add';
+                const imgUrl = item.image_url ? item.image_url : 'https://placehold.co/400x300?text=No+Image';
+
+                const card = `
+                    <div class="card" style="opacity: ${opacity}; background: ${isUnavailable ? '#f9f9f9': 'white'}">
+                        <img src="${imgUrl}" class="card-img" alt="${item.name}">
+                        <div class="card-body">
+                            <div class="card-meta">
+                                <span class="badge-cat">${item.category}</span>
+                                <span class="badge-type">${item.type}</span>
+                            </div>
+                            <h3 style="margin: 5px 0 10px 0; color:#2c3e50;">${item.name}</h3>
+                            <p style="color:#7f8c8d; font-size:0.9em; flex-grow:1; line-height:1.4;">${item.description || "Tasty meal"}</p>
+                            <div class="row">
+                                <span style="font-size:1.4em; font-weight:800; color:#2c3e50;">$${item.price}</span>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <input type="number" id="qty-${item.meal_id}" value="1" min="1" max="5" ${btnState}>
+                                    <button class="${btnClass}" 
+                                            onclick="addToCart(${item.meal_id}, '${item.name}', ${item.price}, ${item.is_available})" 
+                                            ${btnState}>${btnText}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        function addToCart(id, name, price, isAvailable) {
+            if (isAvailable != 1) return;
+            const qtyInput = document.getElementById(`qty-${id}`);
+            let qty = parseInt(qtyInput.value);
+            if (qty < 1) qty = 1; if (qty > 5) { alert("Max quantity is 5"); qty = 5; }
+
+            const existing = cart.find(i => i.id === id);
+            if(existing) {
+                if(existing.qty + qty > 5) { alert("Cart limit: 5 per item"); return; }
+                existing.qty += qty;
+            } else { cart.push({ id, name, price, qty }); }
+            updateCartUI();
+        }
+
+        function clearCart() {
+            if(confirm("Remove all items from cart?")) { cart = []; updateCartUI(); }
+        }
+
+        function updateCartUI() {
+            const bar = document.getElementById('checkout-bar');
+            const countSpan = document.getElementById('cart-count');
+            const totalSpan = document.getElementById('cart-total');
+
+            if (cart.length === 0) { bar.style.display = 'none'; return; }
+            const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
+            const totalPrice = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            bar.style.display = 'flex';
+            countSpan.innerText = `${totalItems}`;
+            totalSpan.innerText = `$${totalPrice.toFixed(2)}`;
+        }
+
+        async function processCheckout() {
+            if (!confirm(`Confirm order for ${document.getElementById('cart-total').innerText}?`)) return;
+            const time = document.getElementById('pickupTime').value + ":00";
+            let successCount = 0; let failCount = 0;
+
+            for (const item of cart) {
+                try {
+                    const res = await fetch('/api/order', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ user_id: user.user_id, meal_id: item.id, quantity: item.qty, pickup_time: time })
+                    });
+                    if (res.ok) successCount++; else failCount++;
+                } catch (err) { failCount++; }
+            }
+            if (failCount === 0) { alert(`✅ Success! Ordered ${successCount} items.`); cart = []; updateCartUI(); window.location.href = '/my-orders'; }
+            else { alert(`⚠️ Finished with errors. Success: ${successCount}, Failed: ${failCount}`); cart = []; updateCartUI(); }
+        }
+
+        function filterMenu(category, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (category === 'all') renderMenu(allMenuItems);
+            else renderMenu(allMenuItems.filter(i => i.category === category));
+        }
+
+        function logout() { localStorage.removeItem('user'); window.location.href = '/'; }
+
+        loadMenu();
+    </script>
+</body>
+</html>

@@ -96,7 +96,7 @@
                             <p style="color:#666">${item.description || "No description available."}</p>
                             <div class="price">$${item.price}</div>
                         </div>
-                        <button class="btn-order" onclick="placeOrder(${item.id}, '${item.name}')">
+                        <button class="btn-order" onclick="placeOrder(${item.meal_id}, '${item.name}')">
                             Order Now
                         </button>
                     </div>
@@ -107,44 +107,65 @@
 
         // 4. Handle Ordering
         async function placeOrder(mealId, mealName) {
-            const userId = document.getElementById('userSelect').value;
-            const timeVal = document.getElementById('pickupTime').value;
+            // 1. GET VALUES
+            const userSelect = document.getElementById('userSelect');
+            const userIdStr = userSelect.value;
+            const userId = parseInt(userIdStr); // Converts string to Integer
             
-            // Construct full timestamp for SQL (Today's date + selected time)
-            const datePart = new Date().toISOString().split('T')[0];
-            const fullPickupTime = `${datePart} ${timeVal}:00`;
+            const timeVal = document.getElementById('pickupTime').value; 
+            const sqlTime = `${timeVal}:00`; 
+
+            // 2. DEBUGGING: Check validation BEFORE sending
+            console.log("--- DEBUGGING ORDER ---");
+            console.log("Raw User String:", userIdStr);
+            console.log("Converted User ID:", userId);
+            console.log("Meal ID:", mealId);
+            
+            // STOP if User ID is invalid (This prevents the 422 Error)
+            if (isNaN(userId)) {
+                alert("❌ Error: No User Selected! Please wait for the user list to load.");
+                return; // Stop here
+            }
 
             const toast = document.getElementById("toast");
             toast.innerText = "Processing...";
             toast.className = "show";
 
             try {
+                // 3. SEND REQUEST
                 const response = await fetch('/api/order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: userId,
-                        meal_id: mealId,
+                        user_id: userId,       
+                        meal_id: parseInt(mealId), 
                         quantity: 1, 
-                        pickup_time: fullPickupTime
+                        pickup_time: sqlTime   
                     })
                 });
 
                 const result = await response.json();
 
+                // 4. HANDLE RESPONSE
                 if (response.ok) {
                     toast.innerText = `✅ Success! Ordered ${mealName}`;
                     toast.style.backgroundColor = "#2e7d32";
                 } else {
-                    // Show the specific error (e.g., "Sold Out" or "User not found")
-                    toast.innerText = `❌ Error: ${result.detail || "Failed"}`;
+                    console.error("Server Error Payload:", result);
+                    // Show the specific validation error if it's a 422
+                    if(result.detail && Array.isArray(result.detail)){
+                        const missingField = result.detail[0].loc[1]; 
+                        toast.innerText = `❌ Invalid Data: ${missingField}`;
+                    } else {
+                        toast.innerText = `❌ Error: ${result.detail || "Failed"}`;
+                    }
                     toast.style.backgroundColor = "#c62828";
                 }
             } catch (err) {
+                console.error("Network Error:", err);
                 toast.innerText = "❌ Network Error";
             }
 
-            // Hide toast after 3 seconds
             setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
