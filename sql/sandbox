@@ -1,0 +1,424 @@
+USE dbsysgr4;
+
+-- =====================================================================
+-- HOCHSCHULE OFFENBURG CANTEEN ORDERING SYSTEM
+-- ---------------------------------------------------------------------
+-- Group 4:
+--   Sean Maverick | René Wüstern | Daniel Baumstark
+--   Sulthan Haja  | John Riecken
+--
+-- Purpose:
+--   Meal ordering, billing, stock, and feedback management
+-- =====================================================================
+
+
+-- ============================================================
+-- 1. USER MANAGEMENT
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `User` (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash CHAR(60) NOT NULL,
+    role VARCHAR(10) NOT NULL,
+    payment_token VARCHAR(50),
+    CONSTRAINT chk_user_role
+        CHECK (role IN ('Student', 'Employee', 'Admin'))
+);
+
+
+-- ============================================================
+-- 2. MENU & INVENTORY MANAGEMENT
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `Meal` (
+    meal_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    category VARCHAR(10) NOT NULL,
+    type VARCHAR(15) NOT NULL,
+    price DECIMAL(5,2) NOT NULL,
+    image_url VARCHAR(255),
+    is_available BOOLEAN DEFAULT TRUE,
+    CONSTRAINT chk_meal_category
+        CHECK (category IN ('Breakfast', 'Lunch', 'Dinner')),
+    CONSTRAINT chk_meal_type
+        CHECK (type IN ('Normal', 'Vegetarian', 'Vegan')),
+    CONSTRAINT chk_meal_price
+        CHECK (price >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS `Ingredient` (
+    ingredient_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    current_quantity DECIMAL(10,2) NOT NULL,
+    unit VARCHAR(20) NOT NULL,
+    expiry_date DATE NOT NULL,
+    CONSTRAINT chk_ingredient_quantity
+        CHECK (current_quantity >= 0),
+);
+
+CREATE TABLE IF NOT EXISTS `Recipe` (
+    meal_id INT NOT NULL,
+    ingredient_id INT NOT NULL,
+    quantity_needed DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (meal_id, ingredient_id),
+    FOREIGN KEY (meal_id) REFERENCES Meal (meal_id),
+    FOREIGN KEY (ingredient_id) REFERENCES Ingredient (ingredient_id)
+);
+
+CREATE TABLE IF NOT EXISTS `Allergen` (
+    allergen_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS `Meal_Allergen` (
+    meal_id INT NOT NULL,
+    allergen_id INT NOT NULL,
+    PRIMARY KEY (meal_id, allergen_id),
+    FOREIGN KEY (meal_id) REFERENCES Meal (meal_id),
+    FOREIGN KEY (allergen_id) REFERENCES Allergen (allergen_id)
+);
+
+CREATE TABLE IF NOT EXISTS `Nutritional_Info` (
+    meal_id INT PRIMARY KEY,
+    calories INT NOT NULL,
+    fat DECIMAL(5,2),
+    protein DECIMAL(5,2),
+    carbs DECIMAL(5,2),
+    FOREIGN KEY (meal_id) REFERENCES Meal (meal_id)
+);
+
+
+-- ============================================================
+-- 3. ORDER MANAGEMENT
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `Order` (
+    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    pickup_time TIME NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    total_amount DECIMAL(6,2) NOT NULL,
+    payment_method VARCHAR(50),
+    pickup_counter VARCHAR(10),
+    CONSTRAINT chk_order_status
+        CHECK (status IN (
+            'Pending',
+            'Preparing',
+            'Ready for Pickup',
+            'Picked Up',
+            'Cancelled'
+        )),
+    CONSTRAINT chk_payment_method
+        CHECK (payment_method IN (
+            'Cash',
+            'Credit Card',
+            'Student Card',
+            'Other'
+        )),
+    FOREIGN KEY (user_id) REFERENCES User (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS `Order_Item` (
+    order_item_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT NOT NULL,
+    meal_id INT NOT NULL,
+    quantity INT NOT NULL,
+    CONSTRAINT chk_item_quantity
+        CHECK (quantity > 0),
+    FOREIGN KEY (order_id)
+        REFERENCES `Order` (order_id)
+        ON DELETE CASCADE,
+    FOREIGN KEY (meal_id)
+        REFERENCES Meal (meal_id)
+);
+
+
+-- ============================================================
+-- 4. FEEDBACK MANAGEMENT
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `Feedback` (
+    feedback_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    meal_id INT NOT NULL,
+    rating INT NOT NULL,
+    comment TEXT,
+    feedback_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_rating_value
+        CHECK (rating BETWEEN 1 AND 5),
+    FOREIGN KEY (user_id) REFERENCES User (user_id),
+    FOREIGN KEY (meal_id) REFERENCES Meal (meal_id)
+);
+
+
+-- ============================================================
+-- 5. STORED VIEWS
+-- ============================================================
+
+-- Monthly Revenue Summary
+DROP VIEW IF EXISTS Monthly_Revenue_Summary;
+
+CREATE VIEW Monthly_Revenue_Summary AS
+SELECT
+    DATE_FORMAT(order_date, '%Y-%m') AS month,
+    SUM(total_amount) AS total_revenue
+FROM `Order`
+WHERE status = 'Picked Up'
+GROUP BY month;
+
+
+-- Feedback Overview
+DROP VIEW IF EXISTS Feedback_Overview;
+
+CREATE VIEW Feedback_Overview AS
+SELECT
+    F.feedback_id,
+    F.feedback_date,
+    U.name AS user_name,
+    U.role AS user_role,
+    M.name AS meal_name,
+    F.rating,
+    F.comment
+FROM Feedback F
+JOIN User U ON F.user_id = U.user_id
+JOIN Meal M ON F.meal_id = M.meal_id;
+
+
+-- Order Receipt
+DROP VIEW IF EXISTS Order_Receipt;
+
+CREATE VIEW Order_Receipt AS
+SELECT
+    O.order_id,
+    O.order_date,
+    O.pickup_time,
+    O.status,
+    U.user_id,
+    U.name AS customer_name,
+    U.role AS customer_role,
+    M.name AS meal_name,
+    OI.quantity,
+    M.price AS unit_price,
+    (M.price * OI.quantity) AS line_total,
+    O.total_amount AS order_total
+FROM `Order` O
+JOIN User U ON O.user_id = U.user_id
+JOIN Order_Item OI ON O.order_id = OI.order_id
+JOIN Meal M ON OI.meal_id = M.meal_id
+ORDER BY O.order_date DESC;
+
+
+-- Kitchen Docket
+DROP VIEW IF EXISTS Kitchen_Docket;
+
+CREATE VIEW Kitchen_Docket AS
+SELECT
+    O.order_id,
+    O.pickup_time,
+    O.pickup_counter,
+    M.name AS meal_name,
+    OI.quantity,
+    M.category,
+    M.type
+FROM `Order` O
+JOIN Order_Item OI ON O.order_id = OI.order_id
+JOIN Meal M ON OI.meal_id = M.meal_id
+WHERE O.status IN ('Pending', 'Preparing')
+ORDER BY O.pickup_time ASC;
+
+
+-- ============================================================
+-- 6. STORED FUNCTIONS
+-- ============================================================
+
+DELIMITER $$
+
+DROP FUNCTION IF EXISTS Calculate_Order_Total;
+
+CREATE FUNCTION Calculate_Order_Total (p_order_id INT)
+RETURNS DECIMAL(6,2)
+DETERMINISTIC
+BEGIN
+    DECLARE v_total DECIMAL(6,2);
+    DECLARE v_role VARCHAR(10);
+
+    SELECT U.role
+    INTO v_role
+    FROM `Order` O
+    JOIN User U ON O.user_id = U.user_id
+    WHERE O.order_id = p_order_id;
+
+    SELECT SUM(M.price * OI.quantity)
+    INTO v_total
+    FROM Order_Item OI
+    JOIN Meal M ON OI.meal_id = M.meal_id
+    WHERE OI.order_id = p_order_id;
+
+    RETURN IF(v_role <> 'Student', v_total * 1.10, v_total);
+END$$
+
+
+DROP FUNCTION IF EXISTS fn_get_dynamic_price;
+
+CREATE FUNCTION fn_get_dynamic_price (
+    p_meal_price DECIMAL(10,2),
+    p_user_role VARCHAR(20)
+)
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    DECLARE final_price DECIMAL(10,2);
+
+    IF p_user_role IN ('Admin', 'Employee') THEN
+        SET final_price = p_meal_price * 1.10;
+    ELSE
+        SET final_price = p_meal_price;
+    END IF;
+
+    RETURN final_price;
+END$$
+
+DELIMITER ;
+
+
+-- ============================================================
+-- 7. STORED PROCEDURES
+-- ============================================================
+
+DELIMITER $$
+
+DROP PROCEDURE IF EXISTS sp_get_monthly_sales;
+
+CREATE PROCEDURE sp_get_monthly_sales ()
+BEGIN
+    SELECT
+        DATE(order_date) AS report_date,
+        COUNT(order_id) AS total_orders,
+        SUM(total_amount) AS total_revenue
+    FROM `Order`
+    WHERE order_date >= DATE_SUB(NOW(), INTERVAL 1 MONTH)
+    GROUP BY DATE(order_date)
+    ORDER BY report_date DESC;
+END$$
+
+
+DROP PROCEDURE IF EXISTS sp_get_weekly_sales;
+
+CREATE PROCEDURE sp_get_weekly_sales ()
+BEGIN
+    SELECT
+        DATE(order_date) AS report_date,
+        COUNT(*) AS total_orders,
+        SUM(total_amount) AS total_revenue
+    FROM `Order`
+    WHERE order_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    GROUP BY DATE(order_date);
+END$$
+
+
+DROP PROCEDURE IF EXISTS sp_place_order;
+
+CREATE PROCEDURE sp_place_order (
+    IN p_meal_id INT,
+    IN p_user_id INT,
+    IN p_quantity INT,
+    IN p_pickup_time TIME
+)
+BEGIN
+    DECLARE v_role VARCHAR(20);
+    DECLARE v_meal_price DECIMAL(5,2);
+    DECLARE v_is_available BOOLEAN;
+    DECLARE v_total_amount DECIMAL(6,2);
+    DECLARE v_new_order_id INT;
+    DECLARE v_missing_ingredient INT;
+
+    START TRANSACTION;
+
+    -- 1. Validate quantity
+    IF p_quantity <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Quantity must be greater than 0';
+    END IF;
+
+    -- 2. Fetch meal details
+    SELECT price, is_available
+    INTO v_meal_price, v_is_available
+    FROM Meal
+    WHERE meal_id = p_meal_id
+    FOR UPDATE;
+
+    IF v_meal_price IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Meal ID does not exist';
+    END IF;
+
+    IF v_is_available = FALSE THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Meal is currently sold out';
+    END IF;
+
+    -- 3. Fetch user role
+    SELECT role
+    INTO v_role
+    FROM User
+    WHERE user_id = p_user_id
+    FOR UPDATE;
+
+    IF v_role IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'User ID does not exist';
+    END IF;
+
+    -- 4. Check ingredient availability
+    SELECT COUNT(*)
+    INTO v_missing_ingredient
+    FROM Recipe R
+    JOIN Ingredient I ON R.ingredient_id = I.ingredient_id
+    WHERE R.meal_id = p_meal_id
+      AND I.current_quantity < (R.quantity_needed * p_quantity);
+
+    IF v_missing_ingredient > 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Insufficient ingredients for this meal';
+    END IF;
+
+    -- 5. Calculate total amount
+    SET v_total_amount = v_meal_price * p_quantity;
+
+    IF v_role = 'Employee' THEN
+        SET v_total_amount = v_total_amount * 1.10;
+    END IF;
+
+    -- 6. Insert order
+    INSERT INTO `Order`
+        (user_id, pickup_time, status, total_amount, order_date)
+    VALUES
+        (p_user_id, p_pickup_time, 'Pending', v_total_amount, NOW());
+
+    SET v_new_order_id = LAST_INSERT_ID();
+
+    -- 7. Insert order item
+    INSERT INTO Order_Item
+        (order_id, meal_id, quantity)
+    VALUES
+        (v_new_order_id, p_meal_id, p_quantity);
+
+    COMMIT;
+
+    -- 8. Return confirmation
+    SELECT
+        v_new_order_id AS OrderID,
+        v_total_amount AS TotalAmount,
+        'Order Placed Successfully' AS Message;
+END$$
+
+DELIMITER ;
+
+
+-- ============================================================
+-- END OF SCRIPT
+-- ============================================================

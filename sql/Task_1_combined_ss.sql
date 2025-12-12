@@ -222,7 +222,7 @@ ORDER BY
 ------------------------ STORED FUNCTIONS ------------------------------
 
 
--- 3. Total Order Amount Calculation
+-- Total Order Amount Calculation
 DELIMITER $$
 
 CREATE FUNCTION Calculate_Order_Total(order_id_in INT)
@@ -255,6 +255,25 @@ BEGIN
 END$$
 
 DELIMITER ;
+-- Dynamic Pricing Function
+	CREATE DEFINER=`dbsysgr1`@`%` FUNCTION `fn_get_dynamic_price`(p_meal_price DECIMAL(10,2), p_user_role VARCHAR(20)) RETURNS decimal(10,2)
+		DETERMINISTIC
+	BEGIN
+		DECLARE final_price DECIMAL(10,2);
+
+		IF p_user_role = 'Admin' or p_user_role = 'Employee' THEN
+			-- Admins pay 10% more
+			SET final_price = p_meal_price * 1.10;
+		ELSE
+			-- Students pay normal price
+			SET final_price = p_meal_price;
+		END IF;
+
+		RETURN final_price;
+	END
+
+
+
 
 
 ------------------------ ##################################### ------------------------

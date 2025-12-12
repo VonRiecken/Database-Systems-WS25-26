@@ -49,7 +49,7 @@ VALUES ('Negative Price Meal', 'Dinner', 'Normal', -3.50);
 
 -- Negative ingredient quantity
 INSERT INTO Ingredient (name, current_quantity, unit)
-VALUES ('Invalid Ingredient', -10.00, 'kg');
+VALUES ('Invalid Negative Ingredient', -10.00, 'kg');
 -- Erwartet: CHECK constraint fail
 
 

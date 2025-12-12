@@ -9,8 +9,8 @@ CREATE TABLE IF NOT EXISTS `User` (
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash CHAR(60) NOT NULL,
     role VARCHAR(10) NOT NULL,
-    payment_method VARCHAR(50),
-    CONSTRAINT chk_user_role CHECK (role IN ('Student', 'Employee')),
+    payment_details VARCHAR(50),
+    CONSTRAINT chk_user_role CHECK (role IN ('Student', 'Employee', 'Admin')),
     CONSTRAINT uq_user_email UNIQUE (email)
 );
 
@@ -80,8 +80,10 @@ CREATE TABLE IF NOT EXISTS `Order` (
     pickup_time TIME NOT NULL,
     status VARCHAR(20) NOT NULL,
     total_amount DECIMAL(6,2) NOT NULL,
+    payment_method VARCHAR(50),
     pickup_counter VARCHAR(10),
     CONSTRAINT chk_order_status CHECK (status IN ('Pending','Preparing','Ready for Pickup','Picked Up','Cancelled')),
+    CONSTRAINT chk_payment_method CHECK (payment_method IN ('Cash', 'Credit Card', 'Student Card', 'Other')),
     FOREIGN KEY (user_id) REFERENCES `User`(user_id)
 );
 
