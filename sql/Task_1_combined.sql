@@ -173,6 +173,8 @@ INSERT IGNORE INTO `Nutritional_Info` (meal_id, calories, fat, protein, carbs) V
 
 ------------------------ ##################################### ------------------------
 
+------------------------ STORED VIEWS ------------------------------
+
 -- Monthly User Meal Report
 CREATE VIEW Monthly_User_Meal_Report AS
 SELECT
@@ -212,6 +214,13 @@ GROUP BY
     month
 ORDER BY
     month;
+
+-- Check Feedback
+
+------------------------ ##################################### ------------------------
+
+------------------------ STORED FUNCTIONS ------------------------------
+
 
 -- 3. Total Order Amount Calculation
 DELIMITER $$
@@ -317,10 +326,9 @@ BEGIN
     -- 6. Insert order item
     INSERT INTO Order_Item (order_id, meal_id, quantity)
     VALUES (v_new_order_id, p_meal_id, p_quantity);
-	
+
 	-- 7. Log Success (Optional)
 	SELECT CONCAT('Order ', v_new_order_id, ' placed successfully. Total: $', v_total_amount) AS notice;
 END$$
 
 DELIMITER ;
-
