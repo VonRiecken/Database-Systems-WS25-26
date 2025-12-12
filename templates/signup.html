@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Signup - Canteen</title>
+    <style>/* Same styles as login */ body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; } .box { background: white; padding: 40px; border-radius: 8px; width: 300px; } input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; } button { width: 100%; padding: 10px; background: #28a745; color: white; border: none; cursor: pointer; } </style>
+</head>
+<body>
+    <div class="box">
+        <h2 style="text-align:center">Create Account</h2>
+        <input type="text" id="name" placeholder="Full Name">
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="signup()">Sign Up</button>
+        <a href="/" style="display:block; text-align:center; margin-top:15px">Back to Login</a>
+    </div>
+
+    <script>
+        async function signup() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/signup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, email, password})
+            });
+
+            if (res.ok) {
+                alert("Account created! Please login.");
+                window.location.href = "/";
+            } else {
+                alert("Error creating account.");
+            }
+        }
+    </script>
+</body>
+</html>

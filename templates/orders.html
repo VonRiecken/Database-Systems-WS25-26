@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Orders - UniEats</title>
+    <style>
+        /* --- GLOBAL STYLES (Matching Menu) --- */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f7f6; 
+            padding: 40px; 
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* --- HEADER SECTION --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .page-title h1 { margin: 0; color: #2c3e50; font-size: 2em; letter-spacing: -0.5px; }
+        .page-title p { margin: 5px 0 0; color: #7f8c8d; }
+
+        .btn-back {
+            text-decoration: none;
+            background: white; 
+            color: #2c3e50; 
+            padding: 10px 20px; 
+            border-radius: 30px; 
+            font-weight: 600; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .btn-back:hover { box-shadow: 0 6px 15px rgba(0,0,0,0.1); transform: translateY(-2px); color: #007bff; }
+
+        /* --- ORDER TABLE CARD --- */
+        .table-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            overflow: hidden; /* Clips the table corners */
+            border: 1px solid #f0f0f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        th {
+            padding: 18px 25px;
+            color: #7f8c8d;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        td {
+            padding: 20px 25px;
+            border-bottom: 1px solid #f1f1f1;
+            font-size: 0.95em;
+            color: #2c3e50;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #fafbfc; }
+
+        /* --- SPECIFIC COLUMN STYLES --- */
+        .col-id { font-weight: bold; color: #007bff; }
+        .col-price { font-weight: 700; color: #27ae60; }
+        .badge-qty { 
+            background: #e9ecef; color: #555; 
+            padding: 4px 10px; border-radius: 12px; 
+            font-size: 0.9em; font-weight: bold;
+        }
+        
+        /* Meal Icon */
+        .meal-flex { display: flex; align-items: center; gap: 10px; }
+        .meal-icon { font-size: 1.2em; background: #fff5f5; padding: 8px; border-radius: 50%; }
+
+        /* Empty State */
+        .empty-state { padding: 50px; text-align: center; color: #999; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="page-title">
+            <h1>Order History</h1>
+            <p>Track your past meals and receipts</p>
+        </div>
+        <a href="/menu" class="btn-back">← Back to Menu</a>
+    </div>
+
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th width="10%">Order ID</th>
+                    <th width="20%">Date</th>
+                    <th width="40%">Meal Name</th>
+                    <th width="15%">Qty</th>
+                    <th width="15%">Total</th>
+                </tr>
+            </thead>
+            <tbody id="orders-body">
+                </tbody>
+        </table>
+        <div id="loading" style="padding:40px; text-align:center; color:#999;">Loading history...</div>
+    </div>
+
+    <script>
+        // 1. Check Auth
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) window.location.href = '/';
+
+        async function loadOrders() {
+            try {
+                // Fetch orders for the logged-in user
+                const res = await fetch(`/api/orders/${user.user_id}`);
+                const orders = await res.json();
+                
+                const tbody = document.getElementById('orders-body');
+                const loading = document.getElementById('loading');
+                
+                tbody.innerHTML = '';
+                loading.style.display = 'none';
+
+                if (orders.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No orders found. Time to eat! 🍔</td></tr>`;
+                    return;
+                }
+
+                orders.forEach(o => {
+                    // Format Date nicely (e.g., "Oct 12, 2023")
+                    const dateObj = new Date(o.order_date);
+                    const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                    const row = `
+                        <tr>
+                            <td class="col-id">#${o.order_id}</td>
+                            <td>${dateStr}</td>
+                            <td>
+                                <div class="meal-flex">
+                                    <span class="meal-icon">🍽️</span>
+                                    <span>${o.meal_name}</span>
+                                </div>
+                            </td>
+                            <td><span class="badge-qty">${o.quantity}</span></td>
+                            <td class="col-price">$${o.total_amount}</td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerText = "Failed to load orders.";
+            }
+        }
+
+        loadOrders();
+    </script>
+</body>
+</html>
