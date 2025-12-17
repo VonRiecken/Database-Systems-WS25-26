@@ -389,7 +389,7 @@ BEGIN
     -- 5. Calculate total amount
     SET v_total_amount = v_meal_price * p_quantity;
 
-    IF v_role = 'Employee' THEN
+    IF v_role IS NOT NULL AND v_role <> 'Student' THEN
         SET v_total_amount = v_total_amount * 1.10;
     END IF;
 
