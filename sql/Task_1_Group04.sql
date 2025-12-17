@@ -261,7 +261,7 @@ BEGIN
     RETURN IF(v_role <> 'Student', v_total * 1.10, v_total);
 END$$
 
-
+DELIMITER $$
 DROP FUNCTION IF EXISTS fn_get_dynamic_price;
 
 CREATE FUNCTION fn_get_dynamic_price (
@@ -305,7 +305,7 @@ BEGIN
     ORDER BY report_date DESC;
 END$$
 
-
+DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_get_weekly_sales;
 
 CREATE PROCEDURE sp_get_weekly_sales ()
@@ -319,7 +319,7 @@ BEGIN
     GROUP BY DATE(order_date);
 END$$
 
-
+DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_place_order;
 
 CREATE PROCEDURE sp_place_order (
@@ -423,11 +423,11 @@ DELIMITER ;
 -- 8. TRIGGERS
 -- ============================================================
 
-DELIMITER $$
-
 -- ------------------------------------------------------------
 -- Trigger: Consume ingredients after an order item is inserted
 -- ------------------------------------------------------------
+DELIMITER $$
+
 DROP TRIGGER IF EXISTS trg_consume_ingredients;
 
 CREATE TRIGGER trg_consume_ingredients
@@ -447,6 +447,8 @@ END$$
 -- ------------------------------------------------------------
 -- Trigger: Handle expired ingredients on INSERT
 -- ------------------------------------------------------------
+DELIMITER $$
+
 DROP TRIGGER IF EXISTS trg_ingredient_expiry_insert;
 
 CREATE TRIGGER trg_ingredient_expiry_insert
@@ -462,6 +464,8 @@ END$$
 -- ------------------------------------------------------------
 -- Trigger: Handle expired ingredients on UPDATE
 -- ------------------------------------------------------------
+DELIMITER $$
+
 DROP TRIGGER IF EXISTS trg_ingredient_expiry_update;
 
 CREATE TRIGGER trg_ingredient_expiry_update
@@ -477,6 +481,8 @@ END$$
 -- ------------------------------------------------------------
 -- Trigger: Update meal availability after ingredient changes
 -- ------------------------------------------------------------
+DELIMITER $$
+
 DROP TRIGGER IF EXISTS trg_update_meal_availability;
 
 CREATE TRIGGER trg_update_meal_availability
