@@ -10,7 +10,7 @@
 -- =====================================================================
 
 USE dbsysgr4;
-
+ 
 -- ============================================================
 -- 1. USER MANAGEMENT
 -- ============================================================
@@ -428,19 +428,25 @@ DELIMITER ;
 -- ------------------------------------------------------------
 DELIMITER $$
 
-DROP TRIGGER IF EXISTS trg_consume_ingredients;
+DROP TRIGGER IF EXISTS trg_consume_ingredients$$
 
 CREATE TRIGGER trg_consume_ingredients
 AFTER INSERT ON Order_Item
 FOR EACH ROW
 BEGIN
-    -- Reduce ingredient stock according to recipe and quantity ordered
     UPDATE Ingredient I
-    JOIN Recipe R
-        ON I.ingredient_id = R.ingredient_id
     SET I.current_quantity =
-        I.current_quantity - (R.quantity_needed * NEW.quantity)
-    WHERE R.meal_id = NEW.meal_id;
+        I.current_quantity - (
+            SELECT R.quantity_needed
+            FROM Recipe R
+            WHERE R.meal_id = NEW.meal_id
+              AND R.ingredient_id = I.ingredient_id
+        ) * NEW.quantity
+    WHERE I.ingredient_id IN (
+        SELECT R2.ingredient_id
+        FROM Recipe R2
+        WHERE R2.meal_id = NEW.meal_id
+    );
 END$$
 
 
@@ -578,12 +584,14 @@ INSERT IGNORE INTO `Order` (order_id, user_id, pickup_time, status, total_amount
 (1004, 4, '18:00:00', 'Picked Up', 7.50, 'Cash', 'B1'),
 (1005, 5, '18:15:00', 'Ready for Pickup', 6.88, 'Credit Card', 'B2');
 
+SET SQL_SAFE_UPDATES = 0;
 INSERT IGNORE INTO Order_Item (order_item_id, order_id, meal_id, quantity) VALUES
 (1, 1001, 101, 1),
 (2, 1002, 102, 1),
 (3, 1003, 103, 1),
 (4, 1004, 104, 1),
 (5, 1005, 105, 1);
+SET SQL_SAFE_UPDATES = 1;
 
 INSERT IGNORE INTO Feedback (feedback_id, user_id, meal_id, rating, comment) VALUES
 (1, 1, 101, 5, 'Very tasty breakfast'),
@@ -682,14 +690,23 @@ VALUES (1, '12:00:00', 'In Transit', 12.00);
 -- ============================================================
 
 -- 5.1 Invalid quantity
+SET SQL_SAFE_UPDATES = 0;
 INSERT INTO Order_Item (order_id, meal_id, quantity)
-VALUES (1001, 101, -2);
+SELECT 1001, 101, -2
+WHERE EXISTS (SELECT 1 FROM `Order` WHERE order_id = 1001)
+  AND EXISTS (SELECT 1 FROM Meal WHERE meal_id = 101);
+ SET SQL_SAFE_UPDATES = 1;
+
 -- Expected: CHECK constraint failure (quantity > 0)
 
 
 -- 5.2 Invalid meal foreign key
+SET SQL_SAFE_UPDATES = 0;
 INSERT INTO Order_Item (order_id, meal_id, quantity)
-VALUES (1001, 999, 2);
+SELECT 1001, 999, 2
+WHERE EXISTS (SELECT 1 FROM `Order` WHERE order_id = 1001)
+  AND EXISTS (SELECT 1 FROM Meal WHERE meal_id = 999);
+SET SQL_SAFE_UPDATES = 1;
 -- Expected: FOREIGN KEY constraint failure
 
 
@@ -811,8 +828,12 @@ VALUES (1, '11:00:00', 'Pending', 5.00);
 
 SET @oid = LAST_INSERT_ID();
 
+SET SQL_SAFE_UPDATES = 0;
 INSERT INTO Order_Item (order_id, meal_id, quantity)
-VALUES (@oid, 101, 1);
+SELECT @oid, 101, 1
+WHERE EXISTS (SELECT 1 FROM `Order` WHERE order_id = @oid)
+  AND EXISTS (SELECT 1 FROM Meal WHERE meal_id = 101);
+SET SQL_SAFE_UPDATES = 1;
 -- Expected: Order item linked to order
 
 DELETE FROM `Order`
