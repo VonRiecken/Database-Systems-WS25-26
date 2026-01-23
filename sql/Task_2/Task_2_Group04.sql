@@ -1105,5 +1105,26 @@ CROSS JOIN round_defects r
 CROSS JOIN mapping_stats m
 CROSS JOIN energy_totals e;
 
--- View the view:
-SELECT * FROM v_umg801_results_summary;
+-- save the view in a table to not run it through all the data every time:
+DROP TABLE IF EXISTS umg801_results_summary;
+
+CREATE TABLE umg801_results_summary AS
+SELECT
+    CURRENT_TIMESTAMP AS generated_at,
+    s.*
+FROM v_umg801_results_summary s;
+
+ALTER TABLE umg801_results_summary
+ADD PRIMARY KEY (generated_at);
+
+-- uncomment below to update to include new data:
+-- TRUNCATE TABLE umg801_results_summary;
+
+-- INSERT INTO umg801_results_summary
+-- SELECT
+--     CURRENT_TIMESTAMP AS generated_at,
+--     s.*
+-- FROM v_umg801_results_summary s;
+
+
+SELECT * FROM umg801_results_summary;
