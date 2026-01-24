@@ -46,9 +46,6 @@ CREATE TABLE umg801_data (
 -- Note: @_measurement is ignored because it contains metadata not required for analysis (only 'umg801').
 -- LOCAL INFILE is enabled in the client/server config.
 
-/* ============================================================
--- uncomment to upload (change local file path to suit)
-
 LOAD DATA LOCAL INFILE 'C:/Users/asus/temp/umg801_dbs_lecture_data/01_30d_schneider_umg801_dbs_lecture.csv'
 INTO TABLE umg801_data
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
@@ -118,7 +115,6 @@ IGNORE 1 ROWS
  COS_PHI_L2, COS_PHI_L3, THDI_L1, THDI_L2, THDI_L3, THDU_L1N, THDU_L2N,
  THDU_L3N, V_L1_L2, V_L1_N, V_L2_L3, V_L2_N, V_L3_L1, V_L3_N)
 SET _time = STR_TO_DATE(@_time, '%Y-%m-%d %H:%i:%s.%f');
-============================================================ */
 
 -- Check for duplicate primary keys (should be empty if PK is enforced)
 SELECT *
@@ -327,7 +323,7 @@ ALTER TABLE umg801_data
 
 -- Step 2: Fill second-level timestamps
 -- ts_sec_crop: truncates fractional seconds
--- ts_sec_round: adds 0.5 seconds then truncates
+-- ts_sec_round: adds 0.5 seconds (500000 µs) then truncates
 UPDATE umg801_data
 SET
     ts_sec_crop  = DATE_FORMAT(_time, '%Y-%m-%d %H:%i:%s'),
@@ -457,7 +453,7 @@ WITH RECURSIVE r AS (
 )
 SELECT n FROM r;
 
--- Recursive CTE (Common Table Expression) is used to generate a continuous, gap-free sequence of 86,400 seconds per day.
+-- Recursive CTE is used to generate a continuous, gap-free sequence of 86,400 seconds per day.
 
 -- 3) Helper table: all days in the observed time range
 DROP TABLE IF EXISTS ts_days;
@@ -639,7 +635,7 @@ SELECT COUNT(*) AS rows_mapped_round FROM mapped_round;
 
 
 /* ============================================================
-Task 3 — Interpolation procedure on mapped data
+Task 3 (continued) — Interpolation procedure on mapped data
 ============================================================ */
 
 -- Create a working table for interpolation (copy of mapped_crop)
@@ -1050,7 +1046,7 @@ FROM v_umg801_results_summary s;
 ALTER TABLE umg801_results_summary
 ADD PRIMARY KEY (generated_at);
 
--- To update to include new data:
+-- Uncomment below to update to include new data:
 -- TRUNCATE TABLE umg801_results_summary;
 
 -- INSERT INTO umg801_results_summary
